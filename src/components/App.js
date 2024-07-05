@@ -1,60 +1,53 @@
-import "@babel/polyfill";
-
-import React,{useState,useEffect } from "react";
-import './../styles/App.css';
+import React, { useEffect, useState } from "react";
+import "./../styles/App.css";
+import API from "../services/api";
+import getFormatedData from "../services/getFormatedData";
 
 const App = () => {
-  const [city, setCity] = useState("");
-  const [search, setSearch] = useState("");
-  const [weather, setWeather] = useState({});
-  const [error, setError] = useState("");
+  const [data, setData] = useState({ name: "", temp: "", des: "", icon: "" });
+  const [value, setValue] = useState("");
+  const [intialMount, setInialMount] = useState(true);
 
-  useEffect(() => {
-  const fetchApi = async () => {
-    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=2d19741fec5e1ebbce4e4b02007b3734`;
-    fetch(url)
-      .then(response => {
-        if (!response.ok) {
-          setError('City not found');
-          throw new Error('City not found');
-          
-        }
-        setError('')
-        return response.json();
+  React.useEffect(() => {
+    setInialMount(false);
+    if (intialMount) return;
+    const controller = new AbortController();
+    fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=${value}&appid=2087e2960bc8f88c1a87fbfdff2ffa1a`,
+      { signal: controller.signal }
+    )
+      .then((res) => res.json())
+      .then((d) => {
+        const [name, temp, des, icon] = getFormatedData(d);
+        setData({ name, temp, des, icon });
+        setValue("");
       })
-      .then(data => setWeather(data))
-      .catch(error => setWeather({error: error.message}));
-  }
-  fetchApi();
-}, [city]);
+      .catch((e) => e);
+    return () => controller.abort();
+  }, [value]);
 
-  
-  function display(){
-    setCity(search)
-  }
-   
   return (
-    <div className="main" id="main">
-      <div className="search">
-        <input type="text" placeholder="Enter a city" onChange={(e)=>setSearch(e.target.value)}/>
-        <button onClick={display}>Search</button>
-      </div>
-      <div className="weather">
-        { error && 
-          <h2>{error}</h2>
-        }
-        { weather.main && 
-          <>
-            <h1>{city}</h1>
-            <h2>{weather.main.temp}°Cel</h2>
-            <h3>{weather.weather[0].description}</h3>
-            <img src={`http://openweathermap.org/img/w/${weather.weather[0].icon}.png`} alt="cloud image"/>
-          </>
-        }
-      </div> 
+    <div>
+      <input
+        type="text"
+        className="search"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+      />
+      <article
+        style={{ display: intialMount ? "none" : "initial" }}
+        className="weather"
+      >
+        <p>{data.name}</p>
+        <h1>{data.temp}°F</h1>
+        <p>{data.des}</p>
+        <img
+          src={`https://openweathermap.org/img/wn/${data.icon}@2x.png`}
+          alt="img"
+        />
+      </article>
     </div>
-  )
-  
-}
+  );
+};
 
-export default App
+export default App;
